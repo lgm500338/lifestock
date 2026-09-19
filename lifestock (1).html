@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>라이프스탁</title>
+<style>
+  :root{
+    --bg:#0f1117; --surface:#1a1d29; --surface2:#232738; --border:#2b3042;
+    --text:#eef0f6; --muted:#8a8fa8; --up:#ff4d5e; --down:#3d8bff; --gold:#f0c454; --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; height:100%;}
+  .num{font-family:'SFMono-Regular',Consolas,'Roboto Mono',monospace; font-variant-numeric:tabular-nums;}
+  #app{max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; position:relative;}
+  .screen{flex:1; display:none; flex-direction:column; padding-bottom:88px;}
+  .screen.active{display:flex;}
+
+  .ticker{position:sticky; top:0; z-index:10; background:rgba(15,17,23,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border); padding:14px 18px 12px;}
+  .ticker-row{display:flex; align-items:center; justify-content:space-between;}
+  .ticker-logo{display:flex; align-items:center; gap:6px; font-size:15px; font-weight:800; color:var(--text);}
+  .ticker-logo span{color:var(--gold);}
+  .session-badge{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
+    font-size:12px; font-weight:600; background:var(--surface2); border:1px solid var(--border);}
+  .session-dot{width:6px; height:6px; border-radius:50%; background:var(--gold);}
+  .session-dot.open{background:var(--up); box-shadow:0 0 0 3px rgba(255,77,94,0.15);}
+  .session-dot.closed{background:var(--muted);}
+  .session-msg{margin-top:8px; font-size:13px; color:var(--muted);}
+
+  .pad{padding:20px 18px;}
+  .total-block{text-align:center; padding:20px 0 10px;}
+  .total-label{font-size:13px; color:var(--muted); margin-bottom:6px;}
+  .total-value{font-size:44px; font-weight:800;}
+  .total-value.up{color:var(--up);} .total-value.down{color:var(--down);} .total-value.flat{color:var(--text);}
+  .total-sub{font-size:12px; color:var(--muted); margin-top:4px;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px;}
+  .card + .card{margin-top:14px;}
+  .card-white{background:#ffffff; border-radius:var(--radius); padding:16px; color:#1a1d29;}
+  .card-title{font-size:13px; color:var(--muted); font-weight:600; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;}
+  .card-title.dark{color:#6b7086;}
+
+  .chart-labels{display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--muted);}
+  .chart-labels.dark{color:#9aa0b4;}
+
+  .char-card{display:flex; align-items:center; gap:14px; cursor:pointer;}
+  .char-emoji{font-size:34px; width:52px; height:52px; display:flex; align-items:center; justify-content:center;
+    background:var(--surface2); border-radius:14px; flex-shrink:0;}
+  .char-name{font-weight:700; font-size:15px;}
+  .char-tag{font-size:12px; color:var(--muted); margin-top:3px; line-height:1.4;}
+  .chevron{margin-left:auto; color:var(--muted); font-size:18px;}
+
+  .cta-btn{display:block; width:100%; text-align:center; padding:14px; margin-top:14px; border-radius:12px;
+    background:var(--gold); color:#1a1400; font-weight:700; font-size:15px; border:none; cursor:pointer;}
+  .cta-btn.secondary{background:var(--surface2); color:var(--text); border:1px solid var(--border);}
+  .cta-btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--border); font-weight:600; padding:10px;}
+
+  .cat-scroll{display:flex; gap:8px; overflow-x:auto; padding:14px 18px; border-bottom:1px solid var(--border);
+    -ms-overflow-style:none; scrollbar-width:none;}
+  .cat-scroll::-webkit-scrollbar{display:none;}
+  .cat-chip{flex-shrink:0; padding:8px 14px; border-radius:999px; background:var(--surface); border:1px solid var(--border);
+    font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; white-space:nowrap;}
+  .cat-chip.active{background:var(--text); color:#0f1117; border-color:var(--text);}
+
+  .item-list{padding:14px 18px;}
+  .item-section-label{font-size:12px; color:var(--muted); font-weight:700; margin:18px 0 8px; padding-left:2px;}
+  .item-row{display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--border);}
+  .item-row:last-child{border-bottom:none;}
+  .check-box{width:22px; height:22px; border-radius:7px; border:2px solid var(--border); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:transparent; cursor:pointer;}
+  .check-box.checked{background:var(--gold); border-color:var(--gold); color:#1a1400;}
+  .item-text{font-size:14.5px; flex:1; line-height:1.4;}
+  .item-row.checked .item-text{color:var(--muted); text-decoration:line-through;}
+  .item-row.negative .item-text{color:#c9a0a6;}
+  .item-row.negative.checked .item-text{color:var(--muted);}
+  .item-row.negative .check-box{border-color:#4a2f36;}
+  .item-row.negative .check-box.checked{background:var(--down); border-color:var(--down); color:#fff;}
+
+  .custom-add{display:flex; gap:8px; margin-top:16px;}
+  .custom-add input{flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+    padding:11px 12px; color:var(--text); font-size:14px;}
+  .custom-add button{padding:0 16px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-weight:600; cursor:pointer;}
+
+  .report-header{text-align:center; padding:24px 18px 8px;}
+  .report-date{font-size:13px; color:var(--muted);}
+  .report-list-item{display:flex; justify-content:space-between; align-items:center; padding:10px 0;
+    border-bottom:1px solid var(--border); font-size:14px;}
+  .report-list-item:last-child{border-bottom:none;}
+  .report-item-cat{font-size:11px; color:var(--muted); margin-top:2px;}
+  .report-val{font-family:'SFMono-Regular',Consolas,monospace; font-weight:700;}
+  .report-val.up{color:var(--up);} .report-val.down{color:var(--down);}
+  .empty-state{text-align:center; padding:50px 20px; color:var(--muted); font-size:14px; line-height:1.7;}
+
+  .period-tabs{display:flex; gap:6px; margin-bottom:12px;}
+  .period-tab{flex:1; text-align:center; padding:7px 0; border-radius:8px; font-size:13px; font-weight:700;
+    background:#f1f2f6; color:#8b90a6; cursor:pointer;}
+  .period-tab.active{background:#1a1d29; color:#fff;}
+
+  .past-row{display:flex; justify-content:space-between; align-items:center; padding:11px 2px;
+    border-bottom:1px solid #eef0f4; font-size:13.5px; cursor:pointer;}
+  .past-row:last-child{border-bottom:none;}
+  .past-row.disabled{cursor:default;}
+  .past-row .past-date{color:#4a4f66; font-weight:600;}
+  .past-row .past-holiday{color:#c3c6d4; font-size:12px;}
+  .past-val{font-family:'SFMono-Regular',Consolas,monospace; font-weight:700;}
+  .past-val.up{color:#ff4d5e;} .past-val.down{color:#3d8bff;} .past-val.flat{color:#a7abbd;}
+
+  .bottom-nav{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px;
+    background:rgba(26,29,41,0.96); backdrop-filter:blur(8px); border-top:1px solid var(--border);
+    display:flex; padding:8px 4px calc(8px + env(safe-area-inset-bottom));}
+  .nav-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 0;
+    background:none; border:none; color:var(--muted); font-size:11px; cursor:pointer;}
+  .nav-btn.active{color:var(--gold);}
+  .nav-icon{font-size:20px;}
+
+  .ob-overlay{position:fixed; inset:0; background:var(--bg); z-index:50; display:none; flex-direction:column;}
+  .ob-overlay.active{display:flex;}
+  .ob-wrap{padding:28px 24px; flex:1; display:flex; flex-direction:column;}
+  .ob-close{align-self:flex-end; background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; padding:4px;}
+  .ob-logo{font-size:15px; color:var(--gold); font-weight:700; letter-spacing:0.02em;}
+  .ob-title{font-size:24px; font-weight:800; margin-top:14px; line-height:1.35;}
+  .ob-desc{font-size:14px; color:var(--muted); margin-top:12px; line-height:1.6;}
+  .ob-progress{height:4px; background:var(--surface2); border-radius:999px; margin:22px 0; overflow:hidden;}
+  .ob-progress-bar{height:100%; background:var(--gold); border-radius:999px; transition:width .3s;}
+  .ob-q{font-size:19px; font-weight:700; line-height:1.5; margin-bottom:22px;}
+  .ob-opt{display:block; width:100%; text-align:left; padding:16px; border-radius:14px; background:var(--surface);
+    border:1px solid var(--border); color:var(--text); font-size:14.5px; line-height:1.5; margin-bottom:12px; cursor:pointer;}
+  .ob-opt:active{background:var(--surface2); border-color:var(--gold);}
+  .ob-result-emoji{font-size:56px; text-align:center; margin-top:10px;}
+  .ob-result-type{text-align:center; font-size:13px; color:var(--muted); margin-top:14px; letter-spacing:0.05em;}
+  .ob-result-name{text-align:center; font-size:24px; font-weight:800; margin-top:6px;}
+  .ob-result-tag{text-align:center; font-size:14px; color:var(--muted); margin-top:12px; line-height:1.6; padding:0 8px;}
+
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:60; display:none;
+    align-items:flex-end; justify-content:center;}
+  .modal-overlay.active{display:flex;}
+  .modal-sheet{width:100%; max-width:480px; background:var(--surface); border-radius:20px 20px 0 0;
+    max-height:80vh; overflow-y:auto; padding:20px 18px calc(20px + env(safe-area-inset-bottom));}
+  .modal-close{width:36px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 16px;}
+
+  .report-subtabs{display:flex; gap:8px; padding:14px 18px 0;}
+  .report-subtab{flex:1; text-align:center; padding:10px 0; border-radius:10px; background:var(--surface);
+    border:1px solid var(--border); font-size:13.5px; font-weight:700; color:var(--muted); cursor:pointer;}
+  .report-subtab.active{background:var(--gold); color:#1a1400; border-color:var(--gold);}
+  .report-panel{display:none;}
+  .report-panel.active{display:block;}
+  .candle-select-label{text-align:center; font-size:13px; color:#6b7086; margin-top:10px; min-height:18px; font-weight:600;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="ticker">
+    <div class="ticker-row">
+      <div class="ticker-logo">📈 <span>라이프스탁</span></div>
+      <div class="session-badge"><span class="session-dot" id="sessionDot"></span><span id="sessionLabel">-</span></div>
+    </div>
+    <div class="session-msg" id="sessionMsg"></div>
+  </div>
+
+  <div id="screenHome" class="screen active">
+    <div class="pad">
+      <div class="total-block">
+        <div class="total-label">오늘의 생활태도 지수</div>
+        <div class="total-value" id="todayTotal">+0.00%</div>
+        <div class="total-sub" id="todaySub">아직 체크한 항목이 없어요</div>
+      </div>
+      <div class="card">
+        <div class="card-title">최근 14일 흐름</div>
+        <div><svg id="chartSvg" width="100%" height="110" viewBox="0 0 320 110"></svg></div>
+        <div class="chart-labels" id="chartLabels"></div>
+      </div>
+      <div class="card char-card" id="charCard" onclick="onCharCardClick()"></div>
+      <button class="cta-btn" onclick="goScreen('screenCheck')">지금 체크하러 가기</button>
+    </div>
+  </div>
+
+  <div id="screenCheck" class="screen">
+    <div class="cat-scroll" id="catScroll"></div>
+    <div class="item-list" id="itemList"></div>
+  </div>
+
+  <div id="screenReport" class="screen">
+    <div class="report-subtabs">
+      <div class="report-subtab active" data-panel="today" onclick="setReportPanel('today')">오늘의 리포트</div>
+      <div class="report-subtab" data-panel="chart" onclick="setReportPanel('chart')">차트</div>
+    </div>
+
+    <div class="report-panel active" id="panelToday">
+      <div class="report-header">
+        <div class="report-date" id="reportDate">-</div>
+        <div class="total-value" id="reportTotal">+0.00%</div>
+      </div>
+      <div class="pad" style="padding-top:6px;">
+        <div class="card">
+          <div class="card-title">오늘 체크한 항목</div>
+          <div id="reportList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-panel" id="panelChart">
+      <div class="pad" style="padding-top:16px;">
+        <div class="card-white">
+          <div class="period-tabs">
+            <div class="period-tab active" data-p="day" onclick="setPeriod('day')">일</div>
+            <div class="period-tab" data-p="week" onclick="setPeriod('week')">주</div>
+            <div class="period-tab" data-p="month" onclick="setPeriod('month')">월</div>
+            <div class="period-tab" data-p="year" onclick="setPeriod('year')">년</div>
+          </div>
+          <svg id="pastChartSvg" width="100%" height="140" viewBox="0 0 320 140"></svg>
+          <div class="chart-labels dark" id="pastChartLabels"></div>
+          <div class="candle-select-label" id="candleSelectLabel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="screenProfile" class="screen">
+    <div class="pad">
+      <div class="card" style="text-align:center; padding:32px 16px;">
+        <div style="font-size:48px;" id="profEmoji">🪙</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:14px; letter-spacing:0.05em;" id="profType">-</div>
+        <div style="font-size:22px; font-weight:800; margin-top:6px;" id="profName">-</div>
+        <div style="font-size:13.5px; color:var(--muted); margin-top:12px; line-height:1.6;" id="profTag">-</div>
+      </div>
+      <button class="cta-btn secondary" onclick="openQuiz()">재테크 성향 다시 검사하기</button>
+      <button class="cta-btn ghost" onclick="goScreen('screenHome')">홈으로</button>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-screen="screenHome" onclick="goScreen('screenHome')"><span class="nav-icon">📈</span>홈</button>
+    <button class="nav-btn" data-screen="screenCheck" onclick="goScreen('screenCheck')"><span class="nav-icon">✅</span>체크하기</button>
+    <button class="nav-btn" data-screen="screenReport" onclick="goScreen('screenReport')"><span class="nav-icon">📊</span>리포트</button>
+  </div>
+</div>
+
+<!-- 성향 테스트 오버레이 -->
+<div class="ob-overlay" id="obOverlay">
+  <div class="ob-wrap">
+    <button class="ob-close" onclick="closeQuiz()">✕</button>
+    <div id="obContent" style="flex:1; display:flex; flex-direction:column;"></div>
+  </div>
+</div>
+
+<!-- 날짜 상세 모달 -->
+<div class="modal-overlay" id="dayModal" onclick="if(event.target===this) closeDayModal()">
+  <div class="modal-sheet">
+    <div class="modal-close"></div>
+    <div class="report-header" style="padding:4px 0 8px;">
+      <div class="report-date" id="modalDate">-</div>
+      <div class="total-value" id="modalTotal">+0.00%</div>
+    </div>
+    <div id="modalList"></div>
+  </div>
+</div>
+
+<script>
+/* ============ 데이터 ============ */
+const HOLIDAYS_2026 = ['2026-01-01','2026-02-16','2026-02-17','2026-02-18','2026-03-01','2026-03-02','2026-05-01','2026-05-05','2026-05-24','2026-05-25','2026-06-03','2026-06-06','2026-07-17','2026-08-15','2026-08-17','2026-09-24','2026-09-25','2026-09-26','2026-10-03','2026-10-05','2026-10-09','2026-12-25'];
+
+const CATEGORIES = {
+  life: { label:'생활습관', emoji:'🌅',
+    pos:['바른 자세로 앉아있기','아침에 일어나자마자 기지개 켜기','자고 일어난 자리 이불 정리하기','공복에 따뜻한 물 마시기','아침 챙겨 먹기','물 목표량만큼 마시기','가벼운 스트레칭 하기','계단 이용하기','정해진 시간에 잠자리 들기','7시간 이상 잠자기','낮잠 20분 이내로 짧게 자기','방 청소하기','책상 위 정리하기','세끼 규칙적으로 챙기기','야식 참기','대중교통이나 도보로 이동하기','하루 30분 이상 걷기','자기 전 스트레칭이나 명상하기','오늘 입을 옷 미리 정하기','세탁물 밀리지 않게 처리하기','오늘 컨디션 스스로 점검하기','약속 시간보다 여유 있게 도착하기','하루 일정 아침에 미리 확인하기','자연광 쬐기','하루 중 잠깐이라도 산책하기','내가 계획한 기상시간에 잘 일어나기','미라클모닝 실천하기 (오전 6시 이전 기상)'],
+    neg:['늦잠 자서 하루를 급하게 시작함','끼니 거름','밤새움','방 정리 미룸','씻지 않고 잠듦'] },
+  digital: { label:'디지털', emoji:'📱',
+    pos:['자기 전 30분 폰 안 보기','잠들 때 폰 손 닿지 않는 곳에 두기','스크린타임 목표치 지키기','SNS 사용 시간 정해서 지키기','알림 확인만 하고 바로 앱 닫기','식사 중 폰 안 보기','불필요한 앱 알림 끄기','화면 없는 시간 30분 이상 갖기','유튜브 쇼츠·릴스 자제하기','온라인 논쟁 안 휘말리기','필요한 정보만 검색하고 바로 종료하기','메일함·메신저 정리하기','불필요한 구독 알림 정리하기','디지털 디톡스 시간 갖기','종이책이나 실물 자료로 읽기','화면 밝기·야간모드 설정하기','불필요한 앱 삭제하기','온라인 정보 출처 확인하기','디지털 기기 없이 식사하기','메신저 답장 미루지 않기','필요한 캡처·메모 정리하기','화면 잠금 후 다른 활동하기','온라인 쇼핑 장바구니 하루 묵히기','클라우드·파일 정리하기','오늘 하루 디지털 사용 돌아보기'],
+    neg:['눈뜨자마자 폰부터 확인함','의미 없이 피드 계속 내림','자기 전까지 폰 보다 잠듦','스크린타임 목표치 크게 초과함','새벽까지 영상 몰아봄'] },
+  money: { label:'소비·재테크', emoji:'💰',
+    pos:['수익보다 지출 작게 유지하기','오늘 하루 무지출 도전하기','장바구니에 담았다가 다시 빼기','커피 직접 내려 마시기','가계부 기록하기','예산 안에서 소비하기','필요한 것만 메모해서 사러 가기','중고거래로 필요한 물건 구하기','안 쓰는 정기구독 해지하기','적금이나 저축 실행하기','할인·쿠폰 챙겨 쓰기','배달 대신 직접 조리하기','필요 없는 물건 팔거나 정리하기','지출 후 바로 기록하기','오늘 하루 소비 되돌아보기','이번 달 목표 저축액 확인하기','가격 비교하고 구매하기','필요한 지출과 원하는 지출 구분해보기','소액이라도 저축계좌에 넣기','오늘 안 쓴 돈 따로 기록하기','재테크 관련 정보 찾아보기','카드값 미리 확인하기','다음 달 예산 미리 계획하기','포인트·마일리지 챙겨 쓰기','지름신 참고 하루 버티기'],
+    neg:['홧김에 온라인쇼핑 결제함','무료체험 신청하고 해지 깜빡함','예산 초과해서 씀','배달음식 충동적으로 시킴','세일이라고 안 쓸 물건 삼'] },
+  mind: { label:'마인드셋', emoji:'🌱',
+    pos:['오늘 감사한 일 하나 떠올리기','목표 다시 되새기기','실수를 배움으로 넘기기','오늘 기분 솔직하게 인정하기','작은 성취 스스로 칭찬하기','부정적인 생각 다른 시각으로 바꿔보기','하루 시작하며 짧게 다짐하기','오늘 있었던 좋은 일 기록하기','비교하는 마음 내려놓기','실패 두려워하지 않고 시도하기','오늘 하루 웃으며 마무리하기','스스로에게 격려의 말 건네기','걱정 종이에 적고 정리하기','오늘의 감정 한 단어로 표현해보기','잠들기 전 하루 차분히 돌아보기','명상이나 심호흡하기','좋아하는 문장이나 글귀 읽기','하루 우선순위 정하기','완벽하지 않아도 괜찮다고 되뇌기','작은 목표 하나 세우고 지키기','나만의 시간 갖기','감정 기복 알아차리고 조절하기','하루의 의미 되짚어보기','미래에 대한 긍정적인 상상하기','오늘 최선을 다했다고 인정하기'],
+    neg:['스스로를 심하게 탓함','남과 비교하며 우울해함','부정적인 생각에 하루 종일 갇혀있음','아무것도 하기 싫은 채로 하루 흘려보냄','화를 참지 못하고 폭발함'] },
+  social: { label:'관계·사회', emoji:'🤝',
+    pos:['오랜만에 안부 연락하기','가족과 대화 나누기','친구의 이야기 잘 들어주기','누군가에게 작은 도움 주기','고맙다는 말 표현하기','먼저 인사 건네기','갈등 상황에서 차분하게 대화하기','상대방 입장에서 생각해보기','약속 지키기','함께 식사할 시간 만들기','칭찬 건네기','SNS 대신 직접 만나 시간 보내기','부모님께 안부 묻기','동료에게 격려의 말 건네기','낯선 사람에게 친절 베풀기','오늘 있었던 일 누군가와 나누기','갈등 먼저 풀려고 노력하기','새로운 사람과 대화 나누기','함께 있는 시간에 집중하기','도움 요청하는 것 두려워하지 않기','상대방 말 끝까지 듣기','소소한 안부 묻기','함께한 사람에게 감사 전하기','모임이나 약속에 성실히 참여하기','관계에서 나의 태도 되돌아보기'],
+    neg:['연락 미루다 답장 못함','감정적으로 대응해서 다툼','약속 어김','뒷담화에 동참함','사람들과의 만남 계속 피함'] },
+  etc: { label:'기타', emoji:'✨',
+    pos:['새로운 것 하나 배우기','취미 활동 하기','날씨 느끼며 바깥 공기 쐬기','계획했던 일 끝까지 해내기','미뤘던 일 하나 처리하기','하루 계획대로 움직이기','새로운 장소 가보기','반려동물이나 식물 챙기기','환경을 위한 작은 행동하기','하루 중 창의적인 활동하기','음악 들으며 기분전환하기','몸에 좋은 음식 챙겨 먹기','하루 기록으로 남기기','목표했던 루틴 하나 지키기','날씨에 맞는 준비하기','작은 목표 세우고 실행하기','하루 되돌아보는 시간 갖기','새로운 정보 찾아보기','오늘 하루 스스로에게 만족하기','계획에 없던 휴식 취하기','하루 컨디션에 맞춰 유연하게 대응하기','좋아하는 일 하며 시간 보내기','내일을 위한 준비 미리 해두기','오늘 하루도 무사히 보냈다고 느끼기','계획에 없던 좋은 일 알아차리기'],
+    neg:['하루를 계획 없이 흘려보냄','미루던 일 오늘도 미룸','예상치 못한 안 좋은 일 생김','하루 종일 무기력함','해야 할 일 깜빡함'] }
+};
+
+const QUESTIONS = [
+  {axis:'EI', text:'친구들과의 모임에서 나는', a:'다양한 사람들과 이야기하며 에너지를 얻는 편이다', b:'친한 사람 한두 명과 조용히 이야기하는 게 편하다', la:'E', lb:'I'},
+  {axis:'EI', text:'월급날 가장 먼저 하는 일은', a:'친구들에게 한턱내자고 연락한다', b:'조용히 앉아서 이번 달 지출 계획을 세운다', la:'E', lb:'I'},
+  {axis:'SN', text:'새로운 투자 정보를 들으면', a:'실제 숫자와 데이터를 먼저 확인한다', b:'앞으로 어떻게 될지 가능성부터 상상해본다', la:'S', lb:'N'},
+  {axis:'SN', text:'길 가다 만원을 주웠을 때 나는', a:'주변에 떨어뜨린 사람이 있는지부터 살핀다', b:'오늘 뭔가 좋은 일이 생기려나보다 하고 기분 좋아한다', la:'S', lb:'N'},
+  {axis:'TF', text:'친구가 무리한 소비를 했다고 털어놓으면', a:'왜 그런 선택을 했는지 원인부터 짚어준다', b:'일단 힘들었겠다고 공감부터 해준다', la:'T', lb:'F'},
+  {axis:'TF', text:'돈을 쓸지 말지 결정할 때 가장 중요한 기준은', a:'이게 합리적인 소비인가', b:'이게 나를 행복하게 하는가', la:'T', lb:'F'},
+  {axis:'JP', text:'여행을 갈 때 나는', a:'일정과 예산을 미리 다 짜두는 편이다', b:'일단 떠나서 그때그때 정하는 편이다', la:'J', lb:'P'},
+  {axis:'JP', text:'다음 달 지출 계획은', a:'가계부나 표로 미리 정리해둔다', b:'그때 가서 상황 보고 정한다', la:'J', lb:'P'}
+];
+
+const CHARACTERS = {
+  ISTJ:{emoji:'📘', name:'철저한 계획파 우량주형', tag:'정해둔 원칙대로 착실히 쌓아가는 당신. 화려하진 않아도 흔들리지 않는 우상향 곡선을 그려요.'},
+  ISFJ:{emoji:'🧺', name:'알뜰살뜰 적금왕형', tag:'주변을 챙기면서도 자기 살림은 야무지게. 티 안 나게 꾸준히 불어나는 스타일이에요.'},
+  INFJ:{emoji:'🕯️', name:'가치투자 신념형', tag:'남들이 뭐라 하든 내 기준이 확실한 당신. 장기적으로 믿는 곳에 진득하게 투자해요.'},
+  INTJ:{emoji:'♟️', name:'장기전략 큰손형', tag:'머릿속에 이미 10년 치 계획이 있는 타입. 조용하지만 큰 그림을 그리는 전략가예요.'},
+  ISTP:{emoji:'🔧', name:'실속있는 실전투자형', tag:'말보다 행동, 필요한 것만 딱딱 챙기는 실용주의자. 낭비 없이 알차게 굴려요.'},
+  ISFP:{emoji:'🎨', name:'소소한 행복 소비형', tag:'큰 욕심보다 오늘의 만족이 중요한 당신. 작은 행복에 아낌없이 투자해요.'},
+  INFP:{emoji:'🌙', name:'갬성 큐레이터형', tag:'의미 있는 것에 마음이 먼저 가는 타입. 숫자보다 가치를 따라 움직여요.'},
+  INTP:{emoji:'🔬', name:'데이터 분석러형', tag:'궁금한 건 끝까지 파고드는 당신. 분석하다 보면 어느새 전문가가 돼 있어요.'},
+  ESTP:{emoji:'⚡', name:'오늘만 사는 단타형', tag:'기회다 싶으면 바로 움직이는 순발력의 소유자. 변동성 속에서도 즐길 줄 알아요.'},
+  ESFP:{emoji:'🎉', name:'인생은 축제 플렉스형', tag:'오늘을 즐길 줄 아는 당신. 그 에너지가 결국 좋은 흐름을 만들어내요.'},
+  ENFP:{emoji:'🚀', name:'인생은 한방 비트코인형', tag:'새로운 가능성에 늘 설레는 타입. 가끔은 과감하게, 늘 즐겁게 움직여요.'},
+  ENTP:{emoji:'💡', name:'아이디어 뱅크 투자형', tag:'남들이 안 보는 기회를 먼저 알아채는 당신. 재밌는 판을 잘 찾아내요.'},
+  ESTJ:{emoji:'📈', name:'목표달성 CEO형', tag:'세운 목표는 반드시 해내는 실행력의 소유자. 효율적으로 자산을 관리해요.'},
+  ESFJ:{emoji:'🤲', name:'다같이 잘살자 나눔형', tag:'주변 사람들 챙기면서도 알뜰한 살림꾼. 함께 잘되는 걸 좋아해요.'},
+  ENFJ:{emoji:'🌟', name:'멘토형 어드바이저형', tag:'주변에 좋은 영향을 주는 당신. 사람과 신뢰를 자산으로 쌓아가요.'},
+  ENTJ:{emoji:'🦁', name:'저돌적인 승부사형', tag:'확신이 서면 과감하게 밀어붙이는 타입. 큰 그림을 현실로 만들어요.'}
+};
+
+let ITEMS = [];
+function buildItems(){
+  ITEMS = [];
+  const tierBase = {S:0.07, M:0.20, H:0.35, XL:0.55};
+  Object.keys(CATEGORIES).forEach(key=>{
+    const cat = CATEGORIES[key];
+    cat.pos.forEach((text,i)=>{
+      const ratio = (i+1)/cat.pos.length;
+      const tier = ratio<=0.6?'S': ratio<=0.85?'M': ratio<=0.97?'H':'XL';
+      const jitter = ((i%3)-1)*0.01;
+      const val = Math.round((tierBase[tier]+jitter)*100)/100;
+      ITEMS.push({id:key+'_p'+(i+1), cat:key, text, val, tier, sign:'pos'});
+    });
+    cat.neg.forEach((text,i)=>{
+      const t = cat.neg.length>1 ? i/(cat.neg.length-1) : 0;
+      const val = -Math.round((0.10 + t*0.25)*100)/100;
+      ITEMS.push({id:key+'_n'+(i+1), cat:key, text, val, tier:'N', sign:'neg'});
+    });
+  });
+  const custom = JSON.parse(localStorage.getItem('wdna_custom')||'[]');
+  custom.forEach(c=> ITEMS.push(c));
+}
+buildItems();
+
+/* ============ 유틸 ============ */
+function pad2(n){return n<10?'0'+n:''+n;}
+function todayStr(d){ d=d||new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function isHoliday(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  const day = d.getDay();
+  if(day===0||day===6) return true;
+  return HOLIDAYS_2026.includes(dateStr);
+}
+function getSession(now){
+  now = now || new Date();
+  const ds = todayStr(now);
+  if(isHoliday(ds)) return {key:'holiday', label:'휴장일', msg:'오늘은 쉬는 날이에요. 체크 안 해도 지수는 그대로예요 🎌', open:false};
+  const t = now.getHours()*60 + now.getMinutes();
+  const ranges = [
+    {key:'pre', label:'프리마켓', s:8*60, e:8*60+50, msg:'하루를 준비하는 시간이에요. 아침 루틴을 체크해보세요 🌅', open:true},
+    {key:'break1', label:'브레이크타임', s:8*60+50, e:9*60, msg:'잠시 후 메인마켓이 열려요', open:false},
+    {key:'main', label:'메인마켓', s:9*60, e:15*60+20, msg:'오늘 하루 중 가장 활발한 시간이에요', open:true},
+    {key:'break2', label:'브레이크타임', s:15*60+20, e:15*60+30, msg:'잠시 후 애프터마켓이 열려요', open:false},
+    {key:'after', label:'애프터마켓', s:15*60+30, e:20*60, msg:'하루를 마무리하는 시간이에요', open:true},
+    {key:'home', label:'홈타임', s:20*60, e:24*60, msg:'내일을 위해 편하게, 자기 전 루틴을 체크해보세요 🏠', open:true}
+  ];
+  for(const r of ranges){ if(t>=r.s && t<r.e) return r; }
+  return {key:'deep', label:'딥슬립', msg:'체크 없이 푹 쉬는 시간이에요 😴 (오전 8시에 다시 열려요)', open:false};
+}
+function getCheckedEntries(dateStr){ return JSON.parse(localStorage.getItem('wdna_checked_'+dateStr)||'[]'); }
+function setCheckedEntries(dateStr, arr){ localStorage.setItem('wdna_checked_'+dateStr, JSON.stringify(arr)); }
+function getChecked(dateStr){ return getCheckedEntries(dateStr).map(e=>e.id); }
+function computeTotal(dateStr){
+  const checked = getChecked(dateStr);
+  let sum = 0;
+  checked.forEach(id=>{ const it = ITEMS.find(x=>x.id===id); if(it) sum += it.val; });
+  return Math.round(sum*100)/100;
+}
+function getDayOHLC(dateStr){
+  const entries = getCheckedEntries(dateStr).slice().sort((a,b)=>a.ts-b.ts);
+  if(entries.length===0) return {o:0,h:0,l:0,c:0,hasData:false};
+  let cum=0, o=null, h=-Infinity, l=Infinity;
+  entries.forEach(e=>{
+    const it = ITEMS.find(x=>x.id===e.id); if(!it) return;
+    cum += it.val;
+    if(o===null) o = cum;
+    if(cum>h) h=cum;
+    if(cum<l) l=cum;
+  });
+  return {o:Math.round(o*100)/100, h:Math.round(h*100)/100, l:Math.round(l*100)/100, c:Math.round(cum*100)/100, hasData:true};
+}
+function fmtPct(v){ const s = v>=0?'+':''; return s+v.toFixed(2)+'%'; }
+function addDays(d,n){ const nd=new Date(d); nd.setDate(nd.getDate()+n); return nd; }
+
+/* ============ 성향 테스트 (오버레이) ============ */
+let obIndex = 0;
+let obAnswers = {EI:0, SN:0, TF:0, JP:0};
+
+function openQuiz(){
+  document.getElementById('obOverlay').classList.add('active');
+  startQuiz();
+}
+function closeQuiz(){ document.getElementById('obOverlay').classList.remove('active'); }
+function startQuiz(){ obIndex = 0; obAnswers = {EI:0,SN:0,TF:0,JP:0}; renderObStep(); }
+function renderObStep(){
+  const wrap = document.getElementById('obContent');
+  if(obIndex >= QUESTIONS.length){
+    const type = calcType();
+    localStorage.setItem('wdna_mbti', type);
+    const c = CHARACTERS[type];
+    wrap.innerHTML =
+      '<div class="ob-logo">테스트 완료!</div>'+
+      '<div class="ob-result-emoji">'+c.emoji+'</div>'+
+      '<div class="ob-result-type">'+type+'</div>'+
+      '<div class="ob-result-name">'+c.name+'</div>'+
+      '<div class="ob-result-tag">'+c.tag+'</div>'+
+      '<div style="flex:1"></div>'+
+      '<button class="cta-btn" onclick="finishQuiz()">완료</button>';
+    return;
+  }
+  const q = QUESTIONS[obIndex];
+  wrap.innerHTML =
+    '<div class="ob-progress"><div class="ob-progress-bar" style="width:'+((obIndex)/QUESTIONS.length*100)+'%"></div></div>'+
+    '<div class="ob-q">'+q.text+'</div>'+
+    '<button class="ob-opt" onclick="answerQuiz(\''+q.la+'\')">'+q.a+'</button>'+
+    '<button class="ob-opt" onclick="answerQuiz(\''+q.lb+'\')">'+q.b+'</button>';
+}
+function answerQuiz(letter){
+  const axisMap = {E:'EI',I:'EI',S:'SN',N:'SN',T:'TF',F:'TF',J:'JP',P:'JP'};
+  const axis = axisMap[letter];
+  const positiveSide = {EI:'E',SN:'S',TF:'T',JP:'J'}[axis];
+  obAnswers[axis] += (letter===positiveSide ? 1 : -1);
+  obIndex++;
+  renderObStep();
+}
+function calcType(){
+  let type = '';
+  type += obAnswers.EI >= 0 ? 'E' : 'I';
+  type += obAnswers.SN >= 0 ? 'S' : 'N';
+  type += obAnswers.TF >= 0 ? 'T' : 'F';
+  type += obAnswers.JP >= 0 ? 'J' : 'P';
+  return type;
+}
+function finishQuiz(){ closeQuiz(); renderCharCard(); renderProfile(); }
+
+/* ============ 캐릭터 카드 / 프로필 ============ */
+function renderCharCard(){
+  const type = localStorage.getItem('wdna_mbti');
+  const wrap = document.getElementById('charCard');
+  if(!type){
+    wrap.innerHTML =
+      '<div class="char-emoji">🪙</div>'+
+      '<div><div class="char-name">미확인 종목</div><div class="char-tag">탭하고 내 재테크 성향을 확인해보세요</div></div>'+
+      '<div class="chevron">›</div>';
+  } else {
+    const c = CHARACTERS[type];
+    wrap.innerHTML =
+      '<div class="char-emoji">'+c.emoji+'</div>'+
+      '<div><div class="char-name">'+c.name+'</div><div class="char-tag">'+c.tag+'</div></div>'+
+      '<div class="chevron">›</div>';
+  }
+}
+function onCharCardClick(){
+  const type = localStorage.getItem('wdna_mbti');
+  if(!type) openQuiz(); else goScreen('screenProfile');
+}
+function renderProfile(){
+  const type = localStorage.getItem('wdna_mbti');
+  if(!type) return;
+  const c = CHARACTERS[type];
+  document.getElementById('profEmoji').textContent = c.emoji;
+  document.getElementById('profType').textContent = type;
+  document.getElementById('profName').textContent = c.name;
+  document.getElementById('profTag').textContent = c.tag;
+}
+
+/* ============ 화면 전환 ============ */
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.screen===id));
+  if(id==='screenHome') renderHome();
+  if(id==='screenReport') renderReport();
+}
+function updateSession(){
+  const s = getSession();
+  document.getElementById('sessionLabel').textContent = s.label;
+  document.getElementById('sessionMsg').textContent = s.msg;
+  document.getElementById('sessionDot').className = 'session-dot ' + (s.open ? 'open':'closed');
+}
+
+/* ============ 체크리스트 ============ */
+let activeCat = 'life';
+function renderCatScroll(){
+  const wrap = document.getElementById('catScroll');
+  wrap.innerHTML = Object.keys(CATEGORIES).map(key=>{
+    const cat = CATEGORIES[key];
+    return '<div class="cat-chip'+(key===activeCat?' active':'')+'" onclick="selectCat(\''+key+'\')">'+cat.emoji+' '+cat.label+'</div>';
+  }).join('');
+}
+function selectCat(key){ activeCat = key; renderCatScroll(); renderItems(); }
+function renderItems(){
+  const wrap = document.getElementById('itemList');
+  const dateStr = todayStr();
+  const checked = getChecked(dateStr);
+  const items = ITEMS.filter(i=>i.cat===activeCat);
+  const pos = items.filter(i=>i.sign==='pos');
+  const neg = items.filter(i=>i.sign==='neg');
+  function rowHtml(it){
+    const isChecked = checked.includes(it.id);
+    return '<div class="item-row'+(isChecked?' checked':'')+(it.sign==='neg'?' negative':'')+'" onclick="toggleCheck(\''+it.id+'\')">'+
+      '<div class="check-box'+(isChecked?' checked':'')+'">✓</div>'+
+      '<div class="item-text">'+it.text+'</div>'+
+    '</div>';
+  }
+  wrap.innerHTML =
+    '<div class="item-section-label">오늘 해볼 것</div>'+ pos.map(rowHtml).join('')+
+    '<div class="item-section-label">주의할 것</div>'+ neg.map(rowHtml).join('')+
+    '<div class="custom-add"><input type="text" id="customInput" placeholder="나만의 항목 직접 입력"><button onclick="addCustom()">추가</button></div>';
+}
+function addCustom(){
+  const input = document.getElementById('customInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const custom = JSON.parse(localStorage.getItem('wdna_custom')||'[]');
+  const id = 'custom_' + Date.now();
+  const item = {id, cat:activeCat, text, val:0.15, tier:'M', sign:'pos'};
+  custom.push(item);
+  localStorage.setItem('wdna_custom', JSON.stringify(custom));
+  ITEMS.push(item);
+  input.value=''; renderItems();
+}
+function toggleCheck(id){
+  const dateStr = todayStr();
+  let entries = getCheckedEntries(dateStr);
+  const idx = entries.findIndex(e=>e.id===id);
+  if(idx>=0){ entries.splice(idx,1); } else { entries.push({id, ts:Date.now()}); }
+  setCheckedEntries(dateStr, entries);
+  renderItems(); renderHome(); renderReport();
+}
+
+/* ============ 홈 ============ */
+function renderHome(){
+  const dateStr = todayStr();
+  const total = computeTotal(dateStr);
+  const el = document.getElementById('todayTotal');
+  el.textContent = fmtPct(total);
+  el.className = 'total-value ' + (total>0?'up':total<0?'down':'flat');
+  const checkedCount = getChecked(dateStr).length;
+  document.getElementById('todaySub').textContent = checkedCount>0 ? ('오늘 '+checkedCount+'개 항목 체크했어요') : '아직 체크한 항목이 없어요';
+  renderCharCard();
+  drawHomeChart();
+}
+function drawHomeChart(){
+  const svg = document.getElementById('chartSvg');
+  const labelsWrap = document.getElementById('chartLabels');
+  const days = [];
+  for(let i=13;i>=0;i--){
+    const d = addDays(new Date(), -i); const ds = todayStr(d);
+    days.push({date:ds, holiday:isHoliday(ds), val: computeTotal(ds)});
+  }
+  const maxAbs = Math.max(1, ...days.map(d=>Math.abs(d.val)));
+  const w=320,h=110,gap=4; const barW=(w-gap*(days.length-1))/days.length; const mid=h/2;
+  let s = '<line x1="0" y1="'+mid+'" x2="'+w+'" y2="'+mid+'" stroke="#2b3042" stroke-width="1"/>';
+  days.forEach((d,i)=>{
+    const x = i*(barW+gap);
+    if(d.holiday){ s += '<rect x="'+x+'" y="'+(mid-2)+'" width="'+barW+'" height="4" rx="2" fill="#2b3042"/>'; }
+    else {
+      const barH = Math.max(3, (Math.abs(d.val)/maxAbs) * (h/2-8));
+      const color = d.val>=0?'#ff4d5e':'#3d8bff';
+      const y = d.val>=0 ? mid-barH : mid;
+      s += '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+barH+'" rx="2" fill="'+color+'"/>';
+    }
+  });
+  svg.innerHTML = s; svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  labelsWrap.innerHTML = '<span>'+days[0].date.slice(5).replace('-','.')+'</span><span>오늘</span>';
+}
+
+/* ============ 리포트 (오늘) ============ */
+function setReportPanel(name){
+  document.querySelectorAll('.report-subtab').forEach(el=>el.classList.toggle('active', el.dataset.panel===name));
+  document.getElementById('panelToday').classList.toggle('active', name==='today');
+  document.getElementById('panelChart').classList.toggle('active', name==='chart');
+  if(name==='chart') renderChartPanel();
+}
+function renderReport(){
+  const dateStr = todayStr();
+  const total = computeTotal(dateStr);
+  document.getElementById('reportDate').textContent = dateStr.replace(/-/g,'.') + ' 리포트';
+  const totalEl = document.getElementById('reportTotal');
+  totalEl.textContent = fmtPct(total);
+  totalEl.className = 'total-value ' + (total>0?'up':total<0?'down':'flat');
+  const checked = getChecked(dateStr);
+  const listWrap = document.getElementById('reportList');
+  if(checked.length===0){
+    listWrap.innerHTML = '<div class="empty-state">아직 체크한 항목이 없어요.<br>체크하러 가서 오늘의 리포트를 채워볼까요?</div>';
+  } else {
+    listWrap.innerHTML = checked.map(id=>{
+      const it = ITEMS.find(x=>x.id===id); if(!it) return '';
+      return '<div class="report-list-item"><div><div>'+it.text+'</div><div class="report-item-cat">'+(CATEGORIES[it.cat]?CATEGORIES[it.cat].label:'직접입력')+'</div></div>'+
+        '<div class="report-val '+(it.val>=0?'up':'down')+'">'+fmtPct(it.val)+'</div></div>';
+    }).join('');
+  }
+  renderChartPanel();
+}
+
+/* ============ 지난 기록: 일/주/월/년 ============ */
+let reportPeriod = 'day';
+function setPeriod(p){
+  reportPeriod = p;
+  document.querySelectorAll('.period-tab').forEach(el=>el.classList.toggle('active', el.dataset.p===p));
+  renderChartPanel();
+}
+function buildDayData(){
+  const arr = [];
+  for(let i=29;i>=0;i--){
+    const d = addDays(new Date(),-i); const ds = todayStr(d);
+    arr.push({key:ds, label:ds.slice(5).replace('-','.'), val:computeTotal(ds), holiday:isHoliday(ds), ohlc:getDayOHLC(ds)});
+  }
+  return arr;
+}
+function getMonday(d){ const nd=new Date(d); const day=(nd.getDay()+6)%7; nd.setDate(nd.getDate()-day); return nd; }
+function buildWeekData(){
+  const arr = []; const thisMonday = getMonday(new Date());
+  for(let i=11;i>=0;i--){
+    const start = addDays(thisMonday,-7*i); let sum=0;
+    for(let j=0;j<7;j++){ sum += computeTotal(todayStr(addDays(start,j))); }
+    arr.push({key:todayStr(start), label:(start.getMonth()+1)+'/'+start.getDate()+'주', val:Math.round(sum*100)/100, holiday:false, clickable:false});
+  }
+  return arr;
+}
+function buildMonthData(){
+  const arr = []; const now = new Date();
+  for(let i=11;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const y=d.getFullYear(), m=d.getMonth();
+    const daysInMonth = new Date(y,m+1,0).getDate();
+    let sum=0;
+    for(let day=1; day<=daysInMonth; day++){
+      const dd = new Date(y,m,day);
+      if(dd > now) break;
+      sum += computeTotal(todayStr(dd));
+    }
+    arr.push({key:y+'-'+pad2(m+1), label:(m+1)+'월', val:Math.round(sum*100)/100, holiday:false, clickable:false});
+  }
+  return arr;
+}
+function buildYearData(){
+  const arr = []; const nowY = new Date().getFullYear();
+  for(let i=2;i>=0;i--){
+    const y = nowY-i; let sum=0;
+    const start = new Date(y,0,1); const end = y===nowY? new Date() : new Date(y,11,31);
+    let cur = new Date(start);
+    while(cur<=end){ sum += computeTotal(todayStr(cur)); cur.setDate(cur.getDate()+1); }
+    arr.push({key:''+y, label:y+'년', val:Math.round(sum*100)/100, holiday:false, clickable:false});
+  }
+  return arr;
+}
+function renderChartPanel(){
+  const data = reportPeriod==='day'?buildDayData(): reportPeriod==='week'?buildWeekData(): reportPeriod==='month'?buildMonthData(): buildYearData();
+  const svg = document.getElementById('pastChartSvg');
+  const labelsWrap = document.getElementById('pastChartLabels');
+  const isDay = reportPeriod==='day';
+  const w=320, h=140, gap= isDay?6:4;
+  const slot = (w-gap*(data.length-1))/data.length;
+  const barW = isDay ? Math.max(3, slot*0.55) : Math.max(2, slot-2);
+  const mid = h/2;
+  let maxAbs;
+  if(isDay){
+    maxAbs = Math.max(1, ...data.map(d=> d.holiday?0: (d.ohlc.hasData ? Math.max(Math.abs(d.ohlc.h), Math.abs(d.ohlc.l)) : 0) ));
+  } else {
+    maxAbs = Math.max(1, ...data.map(d=>Math.abs(d.val)));
+  }
+  function y(v){ return mid - (v/maxAbs) * (h/2-14); }
+  let s = '<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="#ffffff"/>';
+  s += '<line x1="0" y1="'+mid+'" x2="'+w+'" y2="'+mid+'" stroke="#e7e9ef" stroke-width="1"/>';
+  data.forEach((d,i)=>{
+    const cx = i*slot + slot/2;
+    if(d.holiday){
+      s += '<line x1="'+(cx-barW/2)+'" y1="'+mid+'" x2="'+(cx+barW/2)+'" y2="'+mid+'" stroke="#e2e4ec" stroke-width="3" stroke-linecap="round"/>';
+      return;
+    }
+    if(isDay){
+      if(!d.ohlc.hasData){ s += '<circle cx="'+cx+'" cy="'+mid+'" r="2" fill="#e2e4ec"/>'; return; }
+      const o=d.ohlc.o, hi=d.ohlc.h, lo=d.ohlc.l, c=d.ohlc.c;
+      const color = c>=o ? '#ff4d5e' : '#3d8bff';
+      const yO=y(o), yC=y(c), yH=y(hi), yL=y(lo);
+      const bodyTop = Math.min(yO,yC), bodyH = Math.max(2, Math.abs(yO-yC));
+      s += '<g onclick="candleClick(\''+d.key+'\',\''+d.label+'\','+c+')" style="cursor:pointer;">';
+      s += '<line x1="'+cx+'" y1="'+yH+'" x2="'+cx+'" y2="'+yL+'" stroke="'+color+'" stroke-width="2"/>';
+      s += '<rect x="'+(cx-barW/2)+'" y="'+bodyTop+'" width="'+barW+'" height="'+bodyH+'" rx="1.5" fill="'+color+'"/>';
+      s += '</g>';
+    } else {
+      const color = d.val>0?'#ff4d5e': d.val<0?'#3d8bff':'#d7d9e2';
+      const barH = Math.max(3, (Math.abs(d.val)/maxAbs) * (h/2-14));
+      const yy = d.val>=0 ? mid-barH : mid;
+      s += '<g onclick="candleSelect(\''+d.label+'\','+d.val+')" style="cursor:pointer;">';
+      s += '<rect x="'+(cx-barW/2)+'" y="'+yy+'" width="'+barW+'" height="'+barH+'" rx="2" fill="'+color+'"/>';
+      s += '</g>';
+    }
+  });
+  svg.innerHTML = s; svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  labelsWrap.innerHTML = '<span>'+data[0].label+'</span><span>'+data[data.length-1].label+'</span>';
+  document.getElementById('candleSelectLabel').textContent = '';
+}
+function candleClick(key, label, val){
+  document.getElementById('candleSelectLabel').textContent = label+'  '+fmtPct(val);
+  openDayModal(key);
+}
+function candleSelect(label, val){
+  document.getElementById('candleSelectLabel').textContent = label+'  '+fmtPct(val);
+}
+
+/* ============ 날짜 상세 모달 ============ */
+function openDayModal(dateStr){
+  const total = computeTotal(dateStr);
+  document.getElementById('modalDate').textContent = dateStr.replace(/-/g,'.');
+  const totalEl = document.getElementById('modalTotal');
+  totalEl.textContent = fmtPct(total);
+  totalEl.className = 'total-value ' + (total>0?'up':total<0?'down':'flat');
+  const checked = getChecked(dateStr);
+  const listWrap = document.getElementById('modalList');
+  if(checked.length===0){
+    listWrap.innerHTML = '<div class="empty-state">이 날은 체크한 항목이 없어요.</div>';
+  } else {
+    listWrap.innerHTML = checked.map(id=>{
+      const it = ITEMS.find(x=>x.id===id); if(!it) return '';
+      return '<div class="report-list-item"><div><div>'+it.text+'</div><div class="report-item-cat">'+(CATEGORIES[it.cat]?CATEGORIES[it.cat].label:'직접입력')+'</div></div>'+
+        '<div class="report-val '+(it.val>=0?'up':'down')+'">'+fmtPct(it.val)+'</div></div>';
+    }).join('');
+  }
+  document.getElementById('dayModal').classList.add('active');
+}
+function closeDayModal(){ document.getElementById('dayModal').classList.remove('active'); }
+
+/* ============ 시작 ============ */
+function init(){
+  renderCatScroll(); renderItems(); renderHome(); renderReport(); renderProfile();
+  updateSession(); setInterval(updateSession, 30000);
+}
+init();
+</script>
+</body>
+</html>
