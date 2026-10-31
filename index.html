@@ -223,6 +223,9 @@
   .choice-note{font-size:11.5px; line-height:1.6; color:rgba(255,255,255,0.5); margin-top:10px; padding:0 4px;}
   .choice-note.light{color:var(--muted);}
   .legal-note{font-size:11px; line-height:1.7; color:var(--muted); text-align:center; margin-top:22px; padding:14px 6px 4px; border-top:1px solid var(--border);}
+  .intro-desc,.ob-desc,.legal-note,.choice-note{word-break:keep-all;}
+  .imti-badge{display:inline-block; font-size:11px; font-weight:900; letter-spacing:0.06em; padding:2px 7px; border-radius:6px;
+    background:linear-gradient(160deg,#ffe3a3,#d98f2b); color:#2a1a00; vertical-align:1px; margin-right:2px;}
   /* ===== 테스트 선택 / 결과 ===== */
   .test-choice{display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:18px 16px; margin-top:12px;
     border-radius:16px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer;}
@@ -327,10 +330,10 @@
         <div id="profAxis" style="text-align:left;"></div>
       </div>
       <button class="cta-btn" id="profUpgrade" onclick="openQuiz('full')">📊 정밀 상장 심사 받기 (60문항)</button>
-      <button class="cta-btn secondary" onclick="openTestChoice()">재테크 성향 다시 검사하기</button>
+      <button class="cta-btn secondary" onclick="openTestChoice()">IMTI 다시 검사하기</button>
       <button class="cta-btn ghost" onclick="openIntro()">앱 소개 다시 보기</button>
       <button class="cta-btn ghost" onclick="goScreen('screenHome')">홈으로</button>
-      <div class="legal-note">본 테스트의 문항과 결과 콘텐츠는 라이프스탁이 독자적으로 개발했으며, 저작권은 아이디어믹스랩에 있습니다.<br>공식 MBTI® 검사가 아니며, 재미와 자기이해를 위한 참고용입니다.<br>© 2026 아이디어믹스랩. All rights reserved.</div>
+      <div class="legal-note">IMTI(IdeaMix Type Indicator)는 아이디어믹스랩이 독자 개발한 경제 성향 지표로, 문항과 결과 콘텐츠의 저작권은 아이디어믹스랩에 있습니다.<br>공식 MBTI® 검사가 아니며, 재미와 자기이해를 위한 참고용입니다.<br>© 2026 아이디어믹스랩. All rights reserved.</div>
     </div>
   </div>
 
@@ -382,7 +385,7 @@
       <div class="intro-slide">
         <div class="intro-visual" style="font-size:52px; margin-bottom:18px;">🔔</div>
         <div class="intro-title">나라는 종목,<br><em>어떻게 상장할까요?</em></div>
-        <div class="intro-desc">MBTI로 나의 재테크 성향 종목을 분석해드려요.</div>
+        <div class="intro-desc"><span class="imti-badge">IMTI</span> 아임티아이 · 나라는 종목의 성향 지표<br>MBTI처럼 16가지의 경제유형으로 분석해요.</div>
         <button class="intro-choice" onclick="introStartTest('quick')">
           <span class="ic-chip"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>
           <span><div class="ic-title">빠른 상장</div><div class="ic-sub">간단 테스트 · 8문항 · 약 1분</div></span>
@@ -391,7 +394,7 @@
           <span class="ic-chip"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V7"/><path d="M17 16v-8"/><path d="M6 9l5-4 4 3 4-4"/></svg></span>
           <span><div class="ic-title">정밀 상장 심사 <span class="ic-tag">추천</span></div><div class="ic-sub">표준 테스트 · 60문항 · 약 5분 · 성향 비율까지</div></span>
         </button>
-        <div class="choice-note">성격유형 이론의 4가지 선호 지표를 바탕으로, 생활·소비 습관 상황에 맞춰 라이프스탁이 독자 개발한 60문항 분석</div>
+        <div class="choice-note">IMTI(IdeaMix Type Indicator) · 성격유형 이론의 4가지 선호 지표를 바탕으로, 생활·소비 습관 상황에 맞춰 아이디어믹스랩이 독자 개발한 60문항 분석</div>
         <button class="intro-later" onclick="closeIntro()">나중에 할게요</button>
       </div>
     </div>
@@ -642,11 +645,11 @@ function openTestChoice(){
   document.getElementById('obContent').innerHTML =
     '<div class="ob-logo">📈 라이프스탁</div>'+
     '<div class="ob-title">나라는 종목,<br>어떻게 상장할까요?</div>'+
-    '<div class="ob-desc">MBTI로 나의 재테크 성향 종목을 분석해드려요.</div>'+
+    '<div class="ob-desc"><span class="imti-badge">IMTI</span> 아임티아이 · 나라는 종목의 성향 지표<br>MBTI처럼 16가지의 경제유형으로 분석해요.</div>'+
     '<div style="height:14px"></div>'+
     '<button class="test-choice" onclick="openQuiz(\'quick\')"><span class="ic-chip"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></span><span><div class="ic-title">빠른 상장</div><div class="ic-sub">간단 테스트 · 8문항 · 약 1분</div></span></button>'+
     '<button class="test-choice primary" onclick="openQuiz(\'full\')"><span class="ic-chip"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V7"/><path d="M17 16v-8"/><path d="M6 9l5-4 4 3 4-4"/></svg></span><span><div class="ic-title">정밀 상장 심사'+(level==='quick'?' 추천':'')+'</div><div class="ic-sub">표준 테스트 · 60문항 · 약 5분 · 성향 비율까지</div></span></button>'+
-    '<div class="choice-note light">성격유형 이론의 4가지 선호 지표를 바탕으로, 생활·소비 습관 상황에 맞춰 라이프스탁이 독자 개발한 60문항 분석</div>';
+    '<div class="choice-note light">IMTI(IdeaMix Type Indicator) · 성격유형 이론의 4가지 선호 지표를 바탕으로, 생활·소비 습관 상황에 맞춰 아이디어믹스랩이 독자 개발한 60문항 분석</div>';
 }
 function openQuiz(mode){
   obMode = mode || 'quick';
@@ -698,12 +701,12 @@ function renderObStep(){
       '<div class="ob-logo">🔔 상장 완료!</div>'+
       '<div style="overflow-y:auto; flex:1;">'+
         '<div class="ob-result-emoji">'+c.emoji+'</div>'+
-        '<div class="ob-result-type">'+type+'</div>'+
+        '<div class="ob-result-type">IMTI · '+type+'</div>'+
         '<div class="ob-result-name">'+c.name+'</div>'+
         '<div style="text-align:center;">'+levelBadge(obMode)+'</div>'+
         '<div class="ob-result-tag">'+c.tag+'</div>'+
         (obMode==='full' ? axisBarsHtml(scores) : '')+
-        '<div class="legal-note">본 테스트의 문항과 결과 콘텐츠는 라이프스탁이 독자적으로 개발했으며, 저작권은 아이디어믹스랩에 있습니다.<br>공식 MBTI® 검사가 아니며, 재미와 자기이해를 위한 참고용입니다.<br>© 2026 아이디어믹스랩. All rights reserved.</div>'+
+        '<div class="legal-note">IMTI(IdeaMix Type Indicator)는 아이디어믹스랩이 독자 개발한 경제 성향 지표로, 문항과 결과 콘텐츠의 저작권은 아이디어믹스랩에 있습니다.<br>공식 MBTI® 검사가 아니며, 재미와 자기이해를 위한 참고용입니다.<br>© 2026 아이디어믹스랩. All rights reserved.</div>'+
       '</div>'+
       (obMode==='quick' ? '<button class="cta-btn secondary" onclick="openQuiz(\'full\')">📊 정밀 상장 심사 받기 (60문항)</button>' : '')+
       '<button class="cta-btn" onclick="finishQuiz()">내 종목 보러 가기</button>';
@@ -918,7 +921,7 @@ function renderCharCard(){
   if(!type){
     wrap.innerHTML =
       '<div class="char-emoji">🪙</div>'+
-      '<div><div class="char-name">미확인 종목</div><div class="char-tag">탭하고 내 재테크 성향을 확인해보세요</div></div>'+
+      '<div><div class="char-name">미확인 종목</div><div class="char-tag">탭하고 IMTI로 내 경제유형을 확인해보세요</div></div>'+
       '<div class="chevron">›</div>';
   } else {
     const c = CHARACTERS[type];
@@ -938,7 +941,7 @@ function renderProfile(){
   const level = localStorage.getItem('wdna_mbti_level') || 'quick';
   const c = CHARACTERS[type];
   document.getElementById('profEmoji').textContent = c.emoji;
-  document.getElementById('profType').textContent = type;
+  document.getElementById('profType').textContent = 'IMTI · '+type;
   document.getElementById('profName').textContent = c.name;
   document.getElementById('profTag').textContent = c.tag;
   document.getElementById('profBadge').innerHTML = levelBadge(level);
